@@ -67,7 +67,7 @@ Then the training data was split into a training set and a cross validation set 
 
 Using the train function in the caret package, I tried a few different models (pls - partial least squares method, rda - regularized discriminant model, rf - random forest) with different trade-offs of simplicity, interpretability, and accuracy. For all of these models, I used simple 10-fold cross-validation with no repetitions rather than the default bootstrap method, both to reduce computational cost and to simplify the explanation of my cross-validation strategy (as requested by the assignment). Not surprisingly, I ultimately settled on a random forest model with default settings. The train function selected mtry=2, since this has very good accuracy, it took almost an hour on 3.5GHz, i7 computer.
 
-Cross-validation accuracy in the training set I constructed is  ~100%. Accuracy on the test set I constructed was 99.5%. Finally, pridicted the classe for the test data using the final random forest model.
+Training accuracy in the training set I constructed is  ~100% (see the results in Final Model section). Accuracy on the cross validation set I constructed was 99.5% (see the results in Cross Validation section). Finally, pridicted the classe for the test data using the final random forest model.
 
 Results files were generated and submitted with 100% correct classification.
 
