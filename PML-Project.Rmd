@@ -1,0 +1,263 @@
+Practical Machine Learning - Class Project - (Aug 2014)
+========================================================
+
+## Problem Statement:
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+
+The goal of our project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. 
+
+- Any of the other variables can be used to predict "classe"  
+- Create a report describing how the model is built  
+- how cross validation is done?  
+- what is the expected out of sample error? 
+- Justification for the choices made.   
+- Use resultant prediction model to predict 20 different test cases.  
+
+
+```{r "initial"}
+
+library(knitr)
+
+```
+`r opts_chunk$set(cache=TRUE,echo=TRUE)`
+
+--- 
+
+<h2><a id="C0"> </a></h2>  
+
+## Table of Contents
+
+1. <a href="#C2">Synopsis</a>  
+2. Data Processing  
+   2.1 <a href="#C3.1">Load the data.</a>  
+   2,2 <a href="#C3.2">Process the data</a>    
+3. Predictive Modelling  
+   3.1 <a href="#C4.1">Generate the model from Training Data </a>   
+   3.2 <a href="#C4.4">Final Model </a>  
+   3.3 <a href="#C4.2">Cross Validate the model with cross validation data </a>  
+   3.4 <a href="#C4.3">Predict the values for test data using the model generated</a>  
+4. <a href="#C5">Create Files for Submission </a>
+5. <a href="#C6">Other models tried </a>
+
+---
+
+<a href="#C0">To Table of Contents</a>  
+
+---
+
+<h2><a id="C1"> </a></h2>
+
+---
+
+<h2><a id="C2"> </a></h2>
+
+## 1. Synopsis  
+
+Loaded the data from .csv files. After exploring the data, since there are lots of blanks and NA in the certain columns
+decided to remove those columns. Some of the columns are not relavent for the problem. So
+
+1. Excluded from the training set all columns which are consistently blank/NA.
+2. Excluded the first 7 columns from the training set (columns: record ID, user name, timestamps, new_window, and num_window) since any predictive value from these features will presumably *not* apply out of sample. 
+
+This left me with 52 predictors: roll_belt through magnet_forearm_z.
+
+Then the training data was split into a training set and a cross validation set (using a 75%/25% split) so that latter accuracy can be estimated with independent data set that is different from training set.
+
+Using the train function in the caret package, I tried a few different models (pls - partial least squares method, rda - regularized discriminant model, rf - random forest) with different trade-offs of simplicity, interpretability, and accuracy. For all of these models, I used simple 10-fold cross-validation with no repetitions rather than the default bootstrap method, both to reduce computational cost and to simplify the explanation of my cross-validation strategy (as requested by the assignment). Not surprisingly, I ultimately settled on a random forest model with default settings. The train function selected mtry=2, since this has very good accuracy, it took almost an hour on 3.5GHz, i7 computer.
+
+Cross-validation accuracy in the training set I constructed is  ~100%. Accuracy on the test set I constructed was 99.5%. Finally, pridicted the classe for the test data using the final random forest model.
+
+Results files were generated and submitted with 100% correct classification.
+
+---
+ 
+<a href="#C0">To Table of Contents</a>
+
+---
+
+<h2><a id="C3"> </a></h2>
+
+## 2. Data Processing  
+
+<h2><a id="C3.1"> </a></h2>
+
+### 2.1  load the data  
+
+```{r "ReadData"}
+
+# load the data.
+
+require(R.utils)
+require(caret)
+
+setInternet2(use = TRUE)
+
+trainingData <- read.csv("pml-training.csv",na.strings = c("NA",""))
+testingData <- read.csv("pml-testing.csv",na.strings = c("NA",""))
+#
+# Check general stats about the data
+#
+cnTraining = colnames(trainingData)
+straining = summary(trainingData)
+stesting = summary(testingData)
+length(trainingData[,1])
+length(testingData[,1])
+
+```
+
+<a href="#C0">To Table of Contents</a>
+
+<h2><a id="C3.2"> </a></h2>
+
+### 2.2  Process the data
+
+```{r "ProcessData"}
+
+set.seed(125)
+#
+# generate training and cross validation set from Train Data
+#
+
+inTrain <- createDataPartition(y=trainingData$classe,
+                              p=0.75, list=FALSE)
+training <- trainingData[inTrain,]
+cvdata <- trainingData[-inTrain,]
+dim(training)
+
+#
+# remove all the columns that have NA's
+# remove the columns with data that is not relevant for the problem
+# record ID (1), user name (1), timestamps (3), new_window (1), and num_window (1)
+# ie: total of 7 columns (from 1 to 7)
+# 
+x = training[ , colSums(is.na(training)) == 0]
+x1 = x[c(-1,-2,-3,-4,-5,-6,-7)]
+dim(x1)
+
+```
+---
+
+<a href="#C0">To Table of Contents</a>
+
+<h2><a id="C4"> </a></h2>
+
+## 3. Predictive Modelling 
+
+<h2><a id="C4.1"> </a></h2>
+
+### 3.1  Generate the model from Training Data 
+
+```{r "Prediction Model"}
+library(caret)
+set.seed(125)
+#
+# Train it with Random Forrest method
+#
+modFit <- train(classe ~ ., method="rf", data=x1)
+print(modFit$finalModel)
+
+```
+
+<a href="#C0">To Table of Contents</a>
+
+<h2><a id="C4.4"> </a></h2>
+
+### 3.2 Final Model
+```{r "Final Model"}
+modFit
+
+```
+
+<a href="#C0">To Table of Contents</a>
+
+<h2><a id="C4.2"> </a></h2>
+
+### 3.3  Cross Validate the model with cross validation data 
+
+```{r "Cross Validation"}
+#
+# Cross Validate the model with cross validation data
+#
+y = cvdata[ , colSums(is.na(cvdata)) == 0]
+y1 = y[c(-1,-2,-3,-4,-5,-6,-7)]
+dim(y1)
+cvp = predict(modFit,newdata=y1)
+confusionMatrix(cvp,y1$classe)
+
+```
+
+<a href="#C0">To Table of Contents</a>
+
+<h2><a id="C4.3"> </a></h2>
+
+### 3.4  Predict the values for test data using the model generated
+
+```{r "Prediction with Test Data and Generated Model"}
+
+#
+# Predict the values for test data using the model generated
+#
+testp = predict(modFit,newdata=testingData)
+testp
+
+```
+
+<a href="#C0">To Table of Contents</a>
+
+<h2><a id="C5"> </a></h2>  
+
+## 4. Create Files for Submission
+
+## Create files for submission
+
+```{r "create answer files"}
+
+answers = as.character(testp)
+answers
+length(answers)
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(answers)
+
+```
+
+<a href="#C0">To Table of Contents</a>  
+
+
+<h2><a id="C6"> </a></h2>
+
+## Other model tried
+
+
+```{r "pls - Partial Least Squares"}
+
+# set.seed(125)
+# dim(x1)
+# ctrl <- trainControl(method= "repeatedcv", repeats = 3, classProbs = TRUE)
+# modelpls <- train(classe ~.,data=x1, method="pls", tuneLength=52, trControl = ctrl, metric = "ROC")
+# modelpls
+
+
+```
+
+```{r "rda - regularized discriminant model"}
+
+# set.seed(125)
+# dim(x1)
+# ctrl <- trainControl(method= "repeatedcv", repeats = 3, classProbs = TRUE)
+# rdaGrid <- data.frame(gamma= (0:4)/4, lambda=3/4)
+# modelrda <- train(classe ~.,data=x1, method="rda", tuneGrid=rdaGrid, trControl = ctrl, metric = "ROC")
+# modelrda
+
+```
+
+<a href="#C0">To Table of Contents</a>
